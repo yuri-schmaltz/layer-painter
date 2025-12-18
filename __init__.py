@@ -19,7 +19,7 @@ from . import handlers, addon, ui, data, operators, keymaps
 
 bl_info = {
     "name": "Layer Painter",
-    "author": "Yuri Schmaltz (maintainer), Joshua Knauber, blanchsb, Cyan Los, Bongo Cat, thefauxrogue, Hunanbean-Collective, E. Woodford, R. Brown, S. Charan, A. Eldien",
+    "author": "Yuri Schmaltz",
     "description": "Layer based texture painting inside blender",
     "blender": (4, 0, 0),
     "version": (3, 0, 0),
