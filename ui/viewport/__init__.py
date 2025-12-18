@@ -1,5 +1,5 @@
 import bpy
-from . import layer_settings, layers, material, export
+from . import layer_settings, layers, material, export, assets
 
 
 classes = (
@@ -13,6 +13,7 @@ def register():
     layers.register()
     material.register()
     export.register()
+    assets.register()
 
 
 def unregister():
@@ -21,3 +22,4 @@ def unregister():
     layers.unregister()
     material.unregister()
     export.unregister()
+    assets.unregister()

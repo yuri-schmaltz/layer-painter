@@ -110,3 +110,21 @@ You can fix bugs, add your own feature ideas or other people ideas. If it's some
  - Added 2, Cycles Only, Edge/Cavity Mask: 'Edge and Corner Mask - Bevel', 'Edge Mask Pointiness' 
  - Added 1, Eevee and Cycles Edge/Cavity Mask:'Cavity, Crevice, Innercorner Mask - from AO'
  - Added 10 new Procedural Grunge Masks for Eevee and Cycles "Procedural Noise Masks": 'Gneiss, Malachite, Agate', 'Rust', 'Concrete/Marble', 'Dusty, 'Dirt, 'Smuged Dirt', 'Dirt Spots', 'Distorted Spots', 'Spline Noise', 'Noisy Lines'
+
+---
+
+## Documentation (Phases 3 & 4)
+
+The following documentation was added to cover advanced features, optimization, and asset management:
+
+- [USER_GUIDE.md](USER_GUIDE.md) – Complete user guide and workflows
+- [ARCHITECTURE.md](ARCHITECTURE.md) – System design, entity model, and patterns
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) – Common issues and solutions
+- [API.md](API.md) – Full API reference with examples
+- [LOGGING_INTEGRATION.md](LOGGING_INTEGRATION.md) – Production logging setup and examples
+- [ASSETS_GUIDE.md](ASSETS_GUIDE.md) – Asset system (versioning, dependencies, import/export)
+- [FILTERING_EXAMPLES.md](FILTERING_EXAMPLES.md) – Advanced filtering and layer queries
+- [OPTIMIZATION_EXAMPLES.md](OPTIMIZATION_EXAMPLES.md) – Caching, batching, profiling examples
+- [ASSETS_EXAMPLES.md](ASSETS_EXAMPLES.md) – Practical asset workflows and bundle creation
+- [PHASES_3_4_UPDATE.md](PHASES_3_4_UPDATE.md) – Summary of new features
+
