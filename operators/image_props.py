@@ -55,8 +55,22 @@ class LP_OT_ImageProps(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        tex = bpy.data.node_groups[self.node_group].nodes[self.node_name]
-        tex_image = bpy.data.node_groups[self.node_group].nodes[self.node_name].image
+        
+        ntree = bpy.data.node_groups.get(self.node_group)
+        if not ntree:
+            layout.label(text="Error: Node group not found", icon="ERROR")
+            return
+        
+        tex = ntree.nodes.get(self.node_name)
+        if not tex or not tex.image:
+            layout.label(text="Error: Node or image not found", icon="ERROR")
+            return
+        
+        tex_image = tex.image
+        if not tex.inputs[0].links:
+            layout.label(text="Error: Mapping not found", icon="ERROR")
+            return
+        
         mapp = tex.inputs[0].links[0].from_node
 
         row = layout.row()
@@ -102,13 +116,24 @@ class LP_OT_ImageProps(bpy.types.Operator):
             col.prop(mapp.inputs[3], "default_value", text="Scale")
 
     def invoke(self, context, event):
-        tex = bpy.data.node_groups[self.node_group].nodes[self.node_name]
-        mapp = tex.inputs[0].links[0].from_node
+        try:
+            ntree = bpy.data.node_groups.get(self.node_group)
+            if not ntree:
+                return {'CANCELLED'}
+            
+            tex = ntree.nodes.get(self.node_name)
+            if not tex or not tex.inputs[0].links:
+                return {'CANCELLED'}
+            
+            mapp = tex.inputs[0].links[0].from_node
 
-        if mapp.inputs[0].links[0].from_socket.name == "UV":
-            self.tex_coords = "UV"
-        elif mapp.inputs[0].links[0].from_socket.name == "Object":
-            self.tex_coords = "BOX"
-        elif mapp.inputs[0].links[0].from_socket.name == "Generated":
-            self.tex_coords = "GENERATED"
-        return context.window_manager.invoke_popup(self)
+            if mapp.inputs[0].links and mapp.inputs[0].links[0].from_socket.name == "UV":
+                self.tex_coords = "UV"
+            elif mapp.inputs[0].links and mapp.inputs[0].links[0].from_socket.name == "Object":
+                self.tex_coords = "BOX"
+            elif mapp.inputs[0].links and mapp.inputs[0].links[0].from_socket.name == "Generated":
+                self.tex_coords = "GENERATED"
+            return context.window_manager.invoke_popup(self)
+        except Exception as e:
+            print(f"[Layer Painter] Error in image props invoke: {str(e)}")
+            return {'CANCELLED'}

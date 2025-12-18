@@ -21,14 +21,23 @@ class LP_OT_AddFillLayer(bpy.types.Operator):
         return utils_operator.base_poll(context)
 
     def execute(self, context):
-        bpy.data.materials[self.material].lp.add_fill_layer()
+        mat = bpy.data.materials.get(self.material)
+        if not mat:
+            self.report({'ERROR'}, f"Material '{self.material}' not found. It may have been deleted.")
+            return {"CANCELLED"}
         
-        # NOTE (Joshua) currenly only used for debugging
-        ntree = bpy.data.materials[self.material].lp.selected.node.node_tree
-        utils_nodes.organize_tree(ntree, ntree.nodes["OUTPUTS"])
+        try:
+            mat.lp.add_fill_layer()
+            
+            # NOTE (Joshua) currenly only used for debugging
+            ntree = mat.lp.selected.node.node_tree
+            utils_nodes.organize_tree(ntree, ntree.nodes["OUTPUTS"])
 
-        utils.redraw()
-        return {"FINISHED"}
+            utils.redraw()
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to add fill layer: {str(e)}")
+            return {"CANCELLED"}
 
 
 class LP_OT_AddPaintLayer(bpy.types.Operator):
@@ -46,9 +55,18 @@ class LP_OT_AddPaintLayer(bpy.types.Operator):
         return utils_operator.base_poll(context)
 
     def execute(self, context):
-        bpy.data.materials[self.material].lp.add_paint_layer()
-        utils.redraw()
-        return {"FINISHED"}
+        mat = bpy.data.materials.get(self.material)
+        if not mat:
+            self.report({'ERROR'}, f"Material '{self.material}' not found.")
+            return {"CANCELLED"}
+        
+        try:
+            mat.lp.add_paint_layer()
+            utils.redraw()
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to add paint layer: {str(e)}")
+            return {"CANCELLED"}
 
 
 class LP_OT_RemoveLayer(bpy.types.Operator):
@@ -69,14 +87,21 @@ class LP_OT_RemoveLayer(bpy.types.Operator):
         return utils_operator.base_poll(context) and mat.lp.selected
 
     def execute(self, context):
-        mat = bpy.data.materials[self.material]
+        mat = bpy.data.materials.get(self.material)
+        if not mat:
+            self.report({'ERROR'}, f"Material '{self.material}' not found.")
+            return {"CANCELLED"}
         
-        if self.overwrite_uid:
-            mat.lp.selected_index = mat.lp.layer_uid_index( self.overwrite_uid )
-            
-        mat.lp.remove_active_layer()
-        utils.redraw()
-        return {"FINISHED"}
+        try:
+            if self.overwrite_uid:
+                mat.lp.selected_index = mat.lp.layer_uid_index(self.overwrite_uid)
+                
+            mat.lp.remove_active_layer()
+            utils.redraw()
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to remove layer: {str(e)}")
+            return {"CANCELLED"}
 
 
 class LP_OT_MoveLayerUp(bpy.types.Operator):
@@ -95,9 +120,18 @@ class LP_OT_MoveLayerUp(bpy.types.Operator):
         return utils_operator.base_poll(context) and mat.lp.selected_index < len(mat.lp.layers)-1
 
     def execute(self, context):
-        bpy.data.materials[self.material].lp.move_active_layer_up()
-        utils.redraw()
-        return {"FINISHED"}
+        mat = bpy.data.materials.get(self.material)
+        if not mat:
+            self.report({'ERROR'}, f"Material '{self.material}' not found.")
+            return {"CANCELLED"}
+        
+        try:
+            mat.lp.move_active_layer_up()
+            utils.redraw()
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to move layer: {str(e)}")
+            return {"CANCELLED"}
 
 
 class LP_OT_MoveLayerDown(bpy.types.Operator):
@@ -116,9 +150,18 @@ class LP_OT_MoveLayerDown(bpy.types.Operator):
         return utils_operator.base_poll(context) and mat.lp.selected_index > 0
 
     def execute(self, context):
-        bpy.data.materials[self.material].lp.move_active_layer_down()
-        utils.redraw()
-        return {"FINISHED"}
+        mat = bpy.data.materials.get(self.material)
+        if not mat:
+            self.report({'ERROR'}, f"Material '{self.material}' not found.")
+            return {"CANCELLED"}
+        
+        try:
+            mat.lp.move_active_layer_down()
+            utils.redraw()
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to move layer: {str(e)}")
+            return {"CANCELLED"}
 
 
 class LP_OT_CycleChannelData(bpy.types.Operator):
@@ -140,11 +183,20 @@ class LP_OT_CycleChannelData(bpy.types.Operator):
         return utils_operator.base_poll(context)
 
     def execute(self, context):
-        mat = bpy.data.materials[self.material]
-        layer = mat.lp.layer_by_uid( self.layer_uid )
+        mat = bpy.data.materials.get(self.material)
+        if not mat:
+            self.report({'ERROR'}, f"Material '{self.material}' not found.")
+            return {"CANCELLED"}
+        
+        try:
+            layer = mat.lp.layer_by_uid(self.layer_uid)
+            if not layer:
+                self.report({'ERROR'}, f"Layer not found. It may have been deleted.")
+                return {"CANCELLED"}
 
-        if layer:
             layer_fill.cycle_channel_data_type(layer, self.channel_uid)
-
-        utils.redraw()
-        return {"FINISHED"}
+            utils.redraw()
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to cycle channel data: {str(e)}")
+            return {"CANCELLED"}

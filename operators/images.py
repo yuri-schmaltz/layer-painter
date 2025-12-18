@@ -9,15 +9,53 @@ from ..data.materials.layers.layer_types import layer_fill
 
 
 def import_image(filepath):
-    """ opens the image from the given path and saves it in the folder next to the blend file """
-    img = bpy.data.images.load(filepath)
-    utils_paint.save_image(img)
-    return img
+    """Opens image from given path and saves it in folder next to blend file.
+    
+    Args:
+        filepath: Path to image file to import.
+    
+    Returns:
+        Loaded and saved image object.
+    
+    Raises:
+        FileNotFoundError: If image file doesn't exist.
+        RuntimeError: If image load or save fails.
+    """
+    try:
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"Image file not found: {filepath}")
+        
+        img = bpy.data.images.load(filepath)
+        if not img:
+            raise RuntimeError(f"Blender failed to load image: {filepath}")
+        
+        utils_paint.save_image(img)
+        return img
+    except Exception as e:
+        raise RuntimeError(f"Error importing image '{filepath}': {str(e)}") from e
 
 
 def load_filepath_in_node(node, filepath, non_color):
-    """ loads the given filepath in the given node """
-    if filepath and os.path.exists(filepath) and "." in filepath:    
+    """Loads given filepath into given node. Handles errors gracefully.
+    
+    Args:
+        node: Image texture node to load into.
+        filepath: Path to image file.
+        non_color: Whether to use Non-Color colorspace.
+    
+    Raises:
+        RuntimeError: If loading fails.
+    """
+    if not filepath:
+        return
+    
+    if not os.path.exists(filepath):
+        raise RuntimeError(f"Image file does not exist: {filepath}")
+    
+    if "." not in filepath:
+        raise RuntimeError(f"Invalid filename (no extension): {filepath}")
+    
+    try:
         img = import_image(filepath)
         node.image = img
         
@@ -25,6 +63,9 @@ def load_filepath_in_node(node, filepath, non_color):
             img.colorspace_settings.name = "Non-Color"
         else:
             img.colorspace_settings.name = "sRGB"
+    except Exception as e:
+        # Re-raise with context for caller to handle
+        raise RuntimeError(f"Failed to load image in node: {str(e)}") from e
 
 
 class LP_OT_OpenImage(bpy.types.Operator, ImportHelper):
@@ -48,9 +89,27 @@ class LP_OT_OpenImage(bpy.types.Operator, ImportHelper):
         return utils_operator.base_poll(context)
 
     def execute(self, context):
-        node = bpy.data.node_groups[self.node_tree].nodes[self.node]
-        load_filepath_in_node(node, self.filepath, self.non_color)
-        return {"FINISHED"}
+        try:
+            ntree = bpy.data.node_groups.get(self.node_tree)
+            if not ntree:
+                self.report({'ERROR'}, f"Node group '{self.node_tree}' not found. It may have been deleted.")
+                return {'CANCELLED'}
+            
+            node = ntree.nodes.get(self.node)
+            if not node:
+                self.report({'ERROR'}, f"Node '{self.node}' not found in node group.")
+                return {'CANCELLED'}
+            
+            load_filepath_in_node(node, self.filepath, self.non_color)
+            return {'FINISHED'}
+        except RuntimeError as e:
+            self.report({'ERROR'}, f"Failed to load image: {str(e)}")
+            return {'CANCELLED'}
+        except Exception as e:
+            self.report({'ERROR'}, f"Unexpected error loading image: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return {'CANCELLED'}
 
 
 class LP_OT_OpenImages(bpy.types.Operator, ImportHelper):

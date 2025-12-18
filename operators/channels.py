@@ -28,10 +28,22 @@ class LP_OT_MakeChannel(bpy.types.Operator):
 
     def execute(self, context):
         inp = utils_operator.get_input(self.material, self.node, self.input)
-        if inp:
-            bpy.data.materials[self.material].lp.add_channel( inp )
-        utils.redraw()
-        return {"FINISHED"}
+        if not inp:
+            self.report({'ERROR'}, f"Input '{self.input}' not found in node '{self.node}'.")
+            return {"CANCELLED"}
+        
+        mat = bpy.data.materials.get(self.material)
+        if not mat:
+            self.report({'ERROR'}, f"Material '{self.material}' not found.")
+            return {"CANCELLED"}
+        
+        try:
+            mat.lp.add_channel(inp)
+            utils.redraw()
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to add channel: {str(e)}")
+            return {"CANCELLED"}
 
 
 class LP_OT_RemoveChannel(bpy.types.Operator):
@@ -59,16 +71,30 @@ class LP_OT_RemoveChannel(bpy.types.Operator):
         return utils_operator.base_poll(context)
 
     def execute(self, context):
-        mat = bpy.data.materials[self.material]
-        if self.overwrite_uid:
-            mat.lp.remove_channel( mat.lp.channel_by_uid(self.overwrite_uid) )
-
-        else:
-            inp = utils_operator.get_input(self.material, self.node, self.input)
-            if inp:
-                mat.lp.remove_channel( mat.lp.channel_by_inp(inp) )
-        utils.redraw()
-        return {"FINISHED"}
+        mat = bpy.data.materials.get(self.material)
+        if not mat:
+            self.report({'ERROR'}, f"Material '{self.material}' not found.")
+            return {"CANCELLED"}
+        
+        try:
+            if self.overwrite_uid:
+                channel = mat.lp.channel_by_uid(self.overwrite_uid)
+                if not channel:
+                    self.report({'ERROR'}, f"Channel not found. It may have been deleted.")
+                    return {"CANCELLED"}
+                mat.lp.remove_channel(channel)
+            else:
+                inp = utils_operator.get_input(self.material, self.node, self.input)
+                if not inp:
+                    self.report({'ERROR'}, f"Input '{self.input}' not found.")
+                    return {"CANCELLED"}
+                mat.lp.remove_channel(mat.lp.channel_by_inp(inp))
+            
+            utils.redraw()
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to remove channel: {str(e)}")
+            return {"CANCELLED"}
 
 
 class LP_OT_MoveChannelUp(bpy.types.Operator):
@@ -90,9 +116,18 @@ class LP_OT_MoveChannelUp(bpy.types.Operator):
         return utils_operator.base_poll(context)
 
     def execute(self, context):
-        bpy.data.materials[self.material].lp.move_channel_up( self.channel_uid )
-        utils.redraw()
-        return {"FINISHED"}
+        mat = bpy.data.materials.get(self.material)
+        if not mat:
+            self.report({'ERROR'}, f"Material '{self.material}' not found.")
+            return {"CANCELLED"}
+        
+        try:
+            mat.lp.move_channel_up(self.channel_uid)
+            utils.redraw()
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to move channel: {str(e)}")
+            return {"CANCELLED"}
 
 
 class LP_OT_MoveChannelDown(bpy.types.Operator):
@@ -114,6 +149,15 @@ class LP_OT_MoveChannelDown(bpy.types.Operator):
         return utils_operator.base_poll(context)
 
     def execute(self, context):
-        bpy.data.materials[self.material].lp.move_channel_down( self.channel_uid )
-        utils.redraw()
-        return {"FINISHED"}
+        mat = bpy.data.materials.get(self.material)
+        if not mat:
+            self.report({'ERROR'}, f"Material '{self.material}' not found.")
+            return {"CANCELLED"}
+        
+        try:
+            mat.lp.move_channel_down(self.channel_uid)
+            utils.redraw()
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to move channel: {str(e)}")
+            return {"CANCELLED"}

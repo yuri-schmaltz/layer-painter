@@ -54,18 +54,26 @@ class LP_OT_PbrSetup(bpy.types.Operator):
         return self.add_missing(mat, princ, normal, bump, out)
 
     def execute(self, context):
-        mat = bpy.data.materials[self.material]
-        princ, normal, bump, out = self.get_nodes(mat)
+        mat = bpy.data.materials.get(self.material)
+        if not mat:
+            self.report({'ERROR'}, f"Material '{self.material}' not found.")
+            return {"CANCELLED"}
+        
+        try:
+            princ, normal, bump, out = self.get_nodes(mat)
 
-        color = mat.lp.add_channel(princ.inputs["Base Color"])
-        color.default_enable = True
-        channel = mat.lp.add_channel(princ.inputs["Roughness"])
-        channel = mat.lp.add_channel(princ.inputs["Metallic"])
-        channel = mat.lp.add_channel(princ.inputs["Emission Color"])
-        channel = mat.lp.add_channel(bump.inputs["Height"])
-        channel.name = "Height"
-        channel = mat.lp.add_channel(normal.inputs["Color"])
-        channel.name = "Normal"
+            color = mat.lp.add_channel(princ.inputs["Base Color"])
+            color.default_enable = True
+            channel = mat.lp.add_channel(princ.inputs["Roughness"])
+            channel = mat.lp.add_channel(princ.inputs["Metallic"])
+            channel = mat.lp.add_channel(princ.inputs["Emission Color"])
+            channel = mat.lp.add_channel(bump.inputs["Height"])
+            channel.name = "Height"
+            channel = mat.lp.add_channel(normal.inputs["Color"])
+            channel.name = "Normal"
 
-        utils.redraw()
-        return {"FINISHED"}
+            utils.redraw()
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to setup PBR: {str(e)}")
+            return {"CANCELLED"}

@@ -39,30 +39,51 @@ class LP_OT_PaintChannel(bpy.types.Operator):
 
     def execute(self, context):
         mat = utils.active_material(context)
-        channel = mat.lp.channel_by_uid(self.channel)
+        if not mat:
+            self.report({'ERROR'}, "No active material.")
+            return {"CANCELLED"}
         
-        # find tex node
-        if self.channel:
-            layer = utils.active_material(context).lp.selected
-            tex, _, _ = layer_fill.get_channel_texture_nodes(layer, self.channel)
-        else:
-            ngroup = bpy.data.node_groups[self.node_group]
-            tex = ngroup.nodes[self.node_name]
-
-        # create or get image
-        if not tex.image:
+        try:
+            channel = mat.lp.channel_by_uid(self.channel)
+            if not channel:
+                self.report({'ERROR'}, "Channel not found.")
+                return {"CANCELLED"}
+            
+            # find tex node
             if self.channel:
-                img = utils_paint.create_image("image", self.resolution, self.color, channel.is_data)
-                tex.image = img
+                layer = mat.lp.selected
+                if not layer:
+                    self.report({'ERROR'}, "No layer selected.")
+                    return {"CANCELLED"}
+                tex, _, _ = layer_fill.get_channel_texture_nodes(layer, self.channel)
             else:
-                img = utils_paint.create_image("image", self.resolution, (0,0,0,1), False)
-                tex.image = img
-        else:
-            img = tex.image
+                ngroup = bpy.data.node_groups.get(self.node_group)
+                if not ngroup:
+                    self.report({'ERROR'}, f"Node group '{self.node_group}' not found.")
+                    return {"CANCELLED"}
+                node = ngroup.nodes.get(self.node_name)
+                if not node:
+                    self.report({'ERROR'}, f"Node '{self.node_name}' not found.")
+                    return {"CANCELLED"}
+                tex = node
 
-        utils_paint.save_all_unsaved()
-        utils_paint.paint_image(img)
-        return {"FINISHED"}
+            # create or get image
+            if not tex.image:
+                if self.channel:
+                    img = utils_paint.create_image("image", self.resolution, self.color, channel.is_data)
+                    tex.image = img
+                else:
+                    img = utils_paint.create_image("image", self.resolution, (0,0,0,1), False)
+                    tex.image = img
+            else:
+                img = tex.image
+
+            utils_paint.save_all_unsaved()
+            utils_paint.paint_image(img)
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to start painting: {str(e)}")
+            return {"CANCELLED"}
 
     def draw(self, context):
         layout = self.layout
@@ -128,13 +149,32 @@ class LP_OT_ToggleTexture(bpy.types.Operator):
         return utils_operator.base_poll(context) and mat.lp.selected
 
     def execute(self, context):
-        ntree = bpy.data.node_groups[self.node_group]
-        node = ntree.nodes[self.node_name]
+        try:
+            ntree = bpy.data.node_groups.get(self.node_group)
+            if not ntree:
+                self.report({'ERROR'}, f"Node group '{self.node_group}' not found.")
+                return {"CANCELLED"}
+            
+            node = ntree.nodes.get(self.node_name)
+            if not node:
+                self.report({'ERROR'}, f"Node '{self.node_name}' not found.")
+                return {"CANCELLED"}
+            
+            if self.input_index >= len(node.inputs):
+                self.report({'ERROR'}, f"Input index out of range.")
+                return {"CANCELLED"}
 
-        if len(node.inputs[self.input_index].links) == 0:
-            tex = utils.active_material(context).lp.selected.texture_setup(ntree)
-            ntree.links.new(tex.outputs[0], node.inputs[self.input_index])
-
-        else:
-            utils_nodes.remove_connected_left(ntree, node.inputs[self.input_index].links[0].from_node)
-        return {"FINISHED"}
+            if len(node.inputs[self.input_index].links) == 0:
+                mat = utils.active_material(context)
+                if not mat or not mat.lp.selected:
+                    self.report({'ERROR'}, "No active layer selected.")
+                    return {"CANCELLED"}
+                tex = mat.lp.selected.texture_setup(ntree)
+                ntree.links.new(tex.outputs[0], node.inputs[self.input_index])
+            else:
+                utils_nodes.remove_connected_left(ntree, node.inputs[self.input_index].links[0].from_node)
+            
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({'ERROR'}, f"Failed to toggle texture: {str(e)}")
+            return {"CANCELLED"}
